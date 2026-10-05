@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<title>SPA host, no .NET required</title>
+<style>
+  body { font: 15px system-ui; margin: 2rem; }
+  nav button { margin-right: 6px; }
+  .gauge { width: 160px; height: 90px; border: 1px solid #999; position: relative; }
+  .needle { position: absolute; left: 50%; bottom: 0; width: 2px; height: 80px;
+            background: #c1571c; transform-origin: bottom center; }
+  #stats { white-space: pre; font-family: ui-monospace, monospace; margin-top: 1rem; }
+  .bad { color: #b3261e; font-weight: 600; } .good { color: #1e7a3a; font-weight: 600; }
+</style>
+
+<!-- SPA HOST, runs without .NET. Block 17's exercise is measured here, and it
+     is the fallback if host 2 misbehaves on the day.
+     The document is never unloaded, exactly like Blazor: whatever the module
+     leaves behind survives every navigation.
+     It loads modules/gauge-module.js, the same file host 2 serves. -->
+
+<nav>
+  <button data-go="a">Gauge page</button>
+  <button data-go="b">Empty page</button>
+  <button id="thrash">navigate 50×</button>
+</nav>
+<div id="outlet"></div>
+<div id="stats"></div>
+
+<script type="module">
+  const outlet = document.getElementById('outlet');
+  const stats  = document.getElementById('stats');
+  const host   = { invokeMethodAsync: (_m, k, d) => (console.log('[spa]', k, d), Promise.resolve()) };
+
+  // HOW WE MEASURE. Counting addEventListener minus removeEventListener lies:
+  // a listener removed through an AbortSignal never calls removeEventListener.
+  // So wrap every registration, fire one resize, and count the wrappers that
+  // RUN. A listener that is really gone, however it went, cannot run.
+  let fired = 0;
+  const realAdd = window.addEventListener.bind(window);
+  window.addEventListener = (type, fn, opts) =>
+    realAdd(type, (...args) => { if (type === 'resize') fired++; return fn(...args); }, opts);
+
+  const liveResizeHandlers = () => {
+    fired = 0;
+    window.dispatchEvent(new Event('resize'));
+    return fired;
+  };
+
+  let navigations = 0;
+  let mounted = null;                 // the gauge on screen, if any: { mod, el }
+  async function go(page) {
+    // The host called init, so the host calls destroy, before the element
+    // goes. A module with no destroy export is left exactly as it is.
+    mounted?.mod.destroy?.(mounted.el);
+    mounted = null;
+
+    // The SPA move: replace the DOM, never reload the document.
+    outlet.innerHTML = page === 'a'
+      ? '<h3>Gauge</h3><div class="gauge"><div class="needle"></div></div>'
+      : '<h3>Nothing here</h3>';
+
+    if (page === 'a') {
+      const mod = await import('/modules/gauge-module.js');
+      const el = outlet.querySelector('.gauge');
+      mod.init(el, host);                               // an element, never an id
+      mounted = { mod, el };
+    }
+    navigations++;
+  }
+
+  function report() {
+    const live = liveResizeHandlers();
+    stats.innerHTML =
+      `navigations: ${navigations}\n` +
+      `resize handlers still responding: <span class="${live > 1 ? 'bad' : 'good'}">${live}</span>`;
+  }
+
+  document.querySelectorAll('[data-go]').forEach((b) =>
+    b.addEventListener('click', async () => { await go(b.dataset.go); report(); }));
+
+  document.getElementById('thrash').addEventListener('click', async () => {
+    for (let i = 0; i < 50; i++) { await go('b'); await go('a'); }
+    report();
+  });
+
+  await go('a');
+  report();
+</script>

@@ -1,0 +1,97 @@
+<!doctype html>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<title>Production Monitor, host 1</title>
+<style>
+  body { font: 15px system-ui; margin: 2rem; }
+  .gauge { width: 160px; height: 90px; border: 1px solid #999; position: relative; }
+  .needle { position: absolute; left: 50%; bottom: 0; width: 2px; height: 80px;
+            background: #c1571c; transform-origin: bottom center; }
+  .row { padding: 6px 10px; border-bottom: 1px solid #eee; cursor: pointer;
+         display: flex; justify-content: space-between; gap: 1rem; }
+  .row.critical { background: #fbe9e6; }
+  .row.selected { background: #e3edfc; }
+  .row:focus-visible { outline: 2px solid #1a56c4; outline-offset: -2px; }
+  /* Block 08: this line has to be readable from the back of a Zoom call. */
+  .live { font: 600 22px ui-monospace, SFMono-Regular, Menlo, monospace; margin: .4rem 0; }
+</style>
+
+<!-- HOST 1, a plain page, no framework.
+     It loads the modules directly from /modules and /client,
+     exactly as they are on disk. -->
+
+<h3>Gauge, host 1</h3>
+<div id="gauge" class="gauge"><div class="needle"></div></div>
+<button id="bump">Bump</button>
+
+<h3>History</h3>
+
+<!-- Something on this page that moves BY ITSELF, ten times a second.
+     If the one thread is busy, these three numbers stop dead. -->
+<p class="live">
+  clock <output id="clock">--:--:--.---</output>
+  · ticks <output id="ticks">0</output>
+  · longest gap <output id="gap">0</output> ms
+</p>
+
+<button id="p95">Recalculate rolling p95 (50,000 readings)</button>
+<span id="p95-result"></span>
+
+<h3>Equipment</h3>
+<p id="status"></p>
+<div id="panel"></div>
+
+<script type="module">
+  import { init, update } from '/modules/gauge-module.js';
+  import { start } from '/client/app.js';
+  import { rollingP95, syntheticHistory } from '/modules/history.js';
+
+  // The same three-function contract host 2 uses. Nothing framework-specific.
+  const host = {
+    invokeMethodAsync: (_m, kind, detail) => {
+      console.log('[host1]', kind, detail);
+      return Promise.resolve();
+    },
+  };
+
+  // ⭐ We hand the module an ELEMENT, not an id. Host 2 does the same,
+  //    with Blazor's ElementReference. The module never touches document.
+  const gauge = document.getElementById('gauge');
+
+  init(gauge, host);
+  document.getElementById('bump')
+    .addEventListener('click', () => update(gauge, { value: Math.random() * 100 }));
+
+  // A clock driven from JavaScript, every 100 ms. It writes the time,
+  // counts its own ticks, and records the longest gap between two of
+  // them. A frozen main thread cannot be argued with: the digits stop
+  // and the gap says for how long.
+  const clock = document.getElementById('clock');
+  const ticks = document.getElementById('ticks');
+  const gapOut = document.getElementById('gap');
+  let tickCount = 0;
+  let longestGap = 0;
+  let lastTick = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    longestGap = Math.max(longestGap, now - lastTick);
+    lastTick = now;
+    tickCount += 1;
+    clock.textContent = new Date().toISOString().slice(11, 23);
+    ticks.textContent = String(tickCount);
+    gapOut.textContent = String(Math.round(longestGap));
+  }, 100);
+
+  // Rolling p95 over a day of synthetic history.
+  const history = syntheticHistory();
+  document.getElementById('p95').addEventListener('click', async () => {
+    longestGap = 0;                       // measure this run, not the last one
+    const t0 = performance.now();
+    const result = await rollingP95(history);
+    document.getElementById('p95-result').textContent =
+      `${result.length} values in ${Math.round(performance.now() - t0)} ms`;
+  });
+
+  // The dashboard: equipment table and alarm summary, from the fixture.
+  start(document.getElementById('panel'), document.getElementById('status'));
+</script>

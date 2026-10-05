@@ -1,0 +1,25 @@
+{
+  "name": "production-monitor",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "node api/src/server.js",
+    "dev:plain": "node hosts/plain/serve.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "sync:module": "node tools/sync-module.js",
+    "check:module": "node tools/check-module.js",
+    "test:coverage": "node --test --experimental-test-coverage",
+    "build": "esbuild client/app.js --bundle --minify --sourcemap --format=esm --outfile=dist/bundle.js",
+    "verify": "npm run lint && npm test && npm run build"
+  },
+  "devDependencies": {
+    "eslint": "^9.15.0",
+    "esbuild": "^0.28.2",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
+  }
+}
