@@ -1,0 +1,62 @@
+<!doctype html>
+<meta charset="utf-8" />
+<link rel="icon" href="data:," />
+<title>Block 11, DOM</title>
+<style>
+  body {
+    font: 15px system-ui;
+    margin: 2rem;
+    max-width: 700px;
+  }
+  .row {
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 12px;
+  }
+  .label {
+    flex: 1;
+  }
+  .value {
+    font-variant-numeric: tabular-nums;
+  }
+  .gauge {
+    width: 160px;
+    height: 90px;
+    border: 1px solid #999;
+    position: relative;
+  }
+  .needle {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 2px;
+    height: 80px;
+    background: #c1571c;
+    transform-origin: bottom center;
+  }
+</style>
+
+<!-- BLOCK 11, run from live-code/:  node serve.js 11-dom-DEMO  →  http://localhost:5174
+     Keep DevTools open on the Console. Everything is typed live in dom.js. -->
+
+<!-- ─── WHEN DOES YOUR SCRIPT RUN? · show these lines, do not type them ───
+<script src="app.js"></script>               plain script in head: can run before the DOM below it exists
+<script src="app.js" defer></script>         defer: runs after parsing
+<script type="module" src="app.js"></script> ⭐ type="module": deferred by default
+<script src="app.js" async></script>         async: runs whenever it finishes downloading
+     The last line of this file is the third kind. That is why dom.js can
+     find #panel without waiting for anything. -->
+
+<h3>Gauge</h3>
+<div id="gauge" class="gauge"><div class="needle"></div></div>
+
+<h3>Equipment</h3>
+<div id="panel">
+  <div class="row">
+    <span>PT-1042</span>
+  </div>
+</div>
+
+<script type="module" src="./dom.js"></script>

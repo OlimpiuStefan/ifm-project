@@ -1,0 +1,55 @@
+<!doctype html>
+<meta charset="utf-8" />
+<link rel="icon" href="data:," />
+<title>Block 12, Events</title>
+<style>
+  body {
+    font: 15px system-ui;
+    margin: 2rem;
+    max-width: 760px;
+  }
+  .panel {
+    border: 1px solid #bbb;
+    padding: 10px;
+  }
+  .row {
+    padding: 10px;
+    border: 1px solid #ddd;
+    margin: 6px 0;
+    cursor: pointer;
+  }
+  .row.selected {
+    background: #e2eff1;
+  }
+  #log {
+    font:
+      12px ui-monospace,
+      monospace;
+    white-space: pre;
+    background: #f6f8f9;
+    padding: 10px;
+    margin-top: 1rem;
+    min-height: 120px;
+  }
+</style>
+
+<!-- BLOCK 12, run from live-code/:  node serve.js 12-events-DEMO  →  http://localhost:5174
+     Three nesting levels: panel, row, button. -->
+
+<div class="panel" id="panel">
+  <div class="row" data-device-id="PT-1042">
+    Press line 1 · inlet
+    <button class="ack">acknowledge</button>
+  </div>
+  <div class="row" data-device-id="VS-0071">
+    Conveyor bearing
+    <button class="ack">acknowledge</button>
+  </div>
+</div>
+<button id="add">add a row</button>
+<button id="detach">detach</button>
+
+<div id="log"></div>
+<button id="clear">clear log</button>
+
+<script type="module" src="./events.js"></script>
