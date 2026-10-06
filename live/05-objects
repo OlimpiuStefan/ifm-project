@@ -1,0 +1,55 @@
+const policy = {
+  number: 'P001', // a plain value
+  holder: { name: 'John Doe', city: 'Boston' }, // an object inside an object
+  claims: [
+    // a list of objects
+    { id: 'C1', amount: 250, settled: true },
+    { id: 'C2', amount: 900, settled: false },
+  ],
+  describe() {
+    return `${this.number} belongs to ${this.holder.name}`;
+  },
+};
+
+console.log(policy.holder.phone?.number);
+
+const reading = {
+  deviceId: 'PT-1042',
+  value: 97,
+  meta: { unit: 'C' },
+  alarms: [
+    { at: '2026-09-03T14:32:07Z', state: 'WARNING' },
+    { at: '2026-09-03T14:33:11Z', state: 'CRITICAL' },
+  ],
+};
+
+console.log(reading?.missing?.unit);
+
+const person = { name: 'Alice', age: 25 };
+
+const { name, age } = person;
+console.log(name, age);
+
+const {
+  meta: { unit: metaUnit },
+} = reading;
+console.log(metaUnit);
+
+const { unit = 'C' } = reading; // 3 · a default
+console.log(unit);
+
+const frame = { deviceId: 'VS-0071', value: 12, meta: { unit: 'mm/s' } };
+
+const {
+  deviceId: device,
+  value: amount = 0,
+  meta: { unit: measuredIn = 'C' } = {},
+} = frame;
+
+function greet(name = 'Guest') {
+  return `Welcome, ${name}`;
+}
+console.log(greet());
+
+const fmt = (value, unit, label = `${value} ${unit}`) => label;
+console.group(fmt(21, 'C'));

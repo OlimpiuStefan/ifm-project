@@ -1,0 +1,43 @@
+// Analogue gauge: a needle on a half dial, from min to max.
+// Click it to log the current value.
+
+// Usage: const g = new Gauge(el, { min: 0, max: 100, unit: 'C' });
+//        g.mount(); g.setValue(42);
+
+export class Gauge {
+  constructor(el, { min = 0, max = 100, unit = 'C' } = {}) {
+    this.el = el;
+    this.min = min;
+    this.max = max;
+    this.unit = unit;
+    this.value = min;
+    this.onClick = () => console.log(`${this.unit}: ${this.value}`);
+  }
+
+  setValue(v) {
+    this.value = v;
+    const pct = (v - this.min) / (this.max - this.min);
+    const needle = this.el.querySelector('.needle');
+    if (needle) needle.style.transform = `rotate(${pct * 180 - 90}deg)`;
+  }
+
+  mount() {
+    this.el.addEventListener('click', this.onClick);
+  }
+
+  destroy() {
+    this.el.removeEventListener('click', this.onClick);
+  }
+}
+
+const el = new EventTarget();
+el.querySelector = () => null;
+
+const g = new Gauge(el, { min: 0, max: 100, unit: 'C' });
+g.mount();
+g.setValue(42);
+el.dispatchEvent(new Event('click'));
+g.setValue(99);
+el.dispatchEvent(new Event('click'));
+g.destroy();
+el.dispatchEvent(new Event('click'));
